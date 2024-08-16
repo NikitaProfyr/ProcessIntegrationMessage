@@ -4,6 +4,7 @@ Channels==4.0.0
 Channels-redis==4.1.0
 Daphne==4.0.0
 python-dotenv==1.0.1
+psycopg2==2.9.9
 asyncpg==0.29.0
 aioimaplib==1.1.0
 pytz==2024.1
