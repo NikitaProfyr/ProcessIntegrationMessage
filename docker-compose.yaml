@@ -4,14 +4,15 @@ services:
       context: .
       dockerfile: Dockerfile
     command: >
-      command: >
-        bash -c "
-        cd ssproject/ &&
-        python manage.py collectstatic --noinput &&
-        python manage.py migrate &&
-        python manage.py loaddata db_backup.json &&
-        python manage.py runserver --bind 0.0.0.0:8000
-        "
+      bash -c "
+      python manage.py collectstatic --noinput 
+      &&
+      python manage.py migrate 
+      &&
+      python manage.py loaddata db_backup.json 
+      &&
+      python manage.py runserver 0.0.0.0:8080
+      "
     restart: unless-stopped
     ports:
       - "8080:8080"
