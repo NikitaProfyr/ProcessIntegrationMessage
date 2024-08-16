@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Добавить почту
+{% endblock %}
+
+{% block body %}
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <div class="d-flex justify-content-between">
+        <div class="load-info" id="load-info"></div>
+        <a href="{% url 'message_service:mail_update_view' pk=mail.pk %}">{{ mail.login }}</a>
+        <a href="{% url 'message_service:mail_list_view' %}">Назад</a>
+    </div>
+
+
+    <table id="messages-table">
+        <thead>
+        <tr>
+            <th>Тема сообщения (наименование</th>
+            <th>Дата отправки</th>
+            <th>Дата получения</th>
+            <th>Описание или текст сообщения</th>
+            <th>Кол-во прикрепленных файлов</th>
+        </tr>
+        </thead>
+        <tbody id="messages-body">
+        <!-- Здесь будут появляться строки сообщений -->
+        </tbody>
+    </table>
+
+    <script>
+        let socket = new WebSocket('ws://127.0.0.1:8000/ws/message-processing/')
+
+        socket.onopen = (event) => {
+            socket.send(JSON.stringify({
+                'login': '{{ mail.login }}',
+                'password': '{{ mail.password }}',
+                'server': '{{ mail.server.name }}'
+            }))
+        };
+
+        socket.onmessage = (event) => {
+            let loader = document.getElementById('load-info');
+            let data = JSON.parse(event.data);
+            let tableBody = document.getElementById('messages-body');
+
+            if (data.status === 300) {
+                loader.innerText = 'чтение сообщений'
+            }
+            if (data.status === 400) {
+                loader.innerText = 'Проблема при получения данных, проверьте учетные данные'
+            }
+            if (data.status === 200) {
+                loader.innerText = 'получение сообщений'
+                tableBody.innerHTML = ''
+                data.messages.forEach(message => {
+                    // Создание строки таблицы
+                    const row = document.createElement('tr');
+
+                    const cell2 = document.createElement('td');
+                    cell2.textContent = message.title;
+                    row.appendChild(cell2);
+
+                    const cell3 = document.createElement('td');
+                    cell3.textContent = message.date_send;
+                    row.appendChild(cell3);
+
+                    const cell4 = document.createElement('td');
+                    cell4.textContent = message.date_receiving;
+                    row.appendChild(cell4);
+
+                    const cell5 = document.createElement('td');
+                    if (message.text_message.length > 150) {
+                        cell5.textContent = message.text_message.substring(0, 150) + '...'
+                    } else {
+                        cell5.textContent = message.text_message;
+                    }
+                    row.appendChild(cell5)
+                    const cell6 = document.createElement('td');
+                    if (message.files.length > 0) {
+                        cell6.innerText = message.files.length
+
+                    }
+
+
+                    row.appendChild(cell6);
+
+                    // Добавление строки в тело таблицы
+                    tableBody.appendChild(row);
+                });
+
+            }
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket Error: ', error)
+            loader.innerText = 'Проблема при получения данных, проверьте учетные данные'
+
+        };
+    </script>
+{% endblock %}
+

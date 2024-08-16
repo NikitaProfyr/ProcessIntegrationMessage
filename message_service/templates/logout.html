@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Logout
+{% endblock %}
+{% block body %}
+    <div>
+        <a href="{% url 'message_service:user_login_view' %}">На страницу авторизации</a>
+    </div>
+{% endblock %}

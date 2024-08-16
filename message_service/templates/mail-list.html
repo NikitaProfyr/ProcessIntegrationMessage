@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Mail List
+{% endblock %}
+{% block body %}
+    <div class="my-5 w-100 d-flex justify-content-around">
+        <div class="">
+            <a class="d-block" href="{% url 'message_service:mail_create_view' %}"> Добавить почту </a>
+            <a class="d-block" href="{% url 'message_service:user_logout_view' %}"> Выйти </a>
+            <h5>Список почт</h5>
+            {% if not mails %}
+                <h4>Вы не добавили ни одной почты</h4>
+            {% else %}
+                <ul>
+                    {% for item in mails %}
+                        <li><a class="d-block"
+                               href="{% url 'message_service:mail_detail_view' pk=item.pk %}">{{ item.login }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+        </div>
+        <div class="">
+            <h2>Created By NIKITA PROFIR</h2>
+        </div>
+    </div>
+
+{% endblock %}
+

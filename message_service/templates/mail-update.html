@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Обновите почту
+{% endblock %}
+{% block body %}
+    <a href="{% url 'message_service:mail_list_view' %}">Назад</a>
+    <h3>Добавьте почту</h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button type="submit">Добавить почту</button>
+    </form>
+{% endblock %}
