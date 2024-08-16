@@ -8,7 +8,7 @@ from message_service.models import Mail, Message, FileMessage
 from message_service.serializers import MessageSerializer, MessageFileSerializer
 
 
-async def message_integration(login, mail_pass, server):
+async def message_integration(login, mail_pass, server) -> int:
     """
     Интеграция сообщений из почтового сервера и сохранение их в базе данных.
 
@@ -46,6 +46,8 @@ async def message_integration(login, mail_pass, server):
                         file=ContentFile(file["payload"], name=file["file_name"]),
                     )
                     await file_instance.asave()
+        count_messages = await Message.objects.filter(mail=mail).acount()
+        return count_messages
 
 
 class WSConsumer(AsyncWebsocketConsumer):
@@ -55,7 +57,13 @@ class WSConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         await self.accept()
-        self.ws_data = {"status": 300, "msg": "", "messages": []}
+        self.ws_data = {
+            "status": 300,
+            "msg": "",
+            "message": {},
+            "count_messages": 0,
+            "load_messages": 0,
+        }
 
     async def disconnect(self, close_code):
 
@@ -66,13 +74,15 @@ class WSConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps(self.ws_data))
         try:
-            await message_integration(
+            count_messages = await message_integration(
                 str(data["login"]), str(data["password"]), str(data["server"])
             )
             self.ws_data["status"] = 200
-            # self.ws_data.update()
-            await self.send(text_data=json.dumps(self.ws_data))
+            self.ws_data["count_messages"] = count_messages
+            self.ws_data["load_messages"] = count_messages
 
+            await self.send(text_data=json.dumps(self.ws_data))
+            print(count_messages)
             async for item in get_all_messages():
                 files = []
                 serializer = MessageSerializer(item)
@@ -82,8 +92,8 @@ class WSConsumer(AsyncWebsocketConsumer):
                 async for file in item.files.all():
                     file_data = MessageFileSerializer(file)
                     files.append(file_data.data)
-
-                self.ws_data["messages"].append(response_data)
+                self.ws_data["load_messages"] -= 1
+                self.ws_data["message"] = response_data
                 await self.send(text_data=json.dumps(self.ws_data))
         except Exception as err:
             print(err)
