@@ -1,53 +1,9 @@
 import json
 
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.core.files.base import ContentFile
 
-from message_service.mail_service import MailServiceManager, get_all_messages
-from message_service.models import Mail, Message, FileMessage
+from message_service.mail_service import get_all_messages, message_integration
 from message_service.serializers import MessageSerializer, MessageFileSerializer
-
-
-async def message_integration(login, mail_pass, server) -> int:
-    """
-    Интеграция сообщений из почтового сервера и сохранение их в базе данных.
-
-    :param login: Логин для доступа к почтовому серверу.
-    :param mail_pass: Пароль для доступа к почтовому серверу.
-    :param server: URL почтового сервера.
-
-    Процесс включает следующие шаги:
-    1. Получение объекта Mail из базы данных по логину.
-    2. Создание и использование менеджера для работы с почтовыми сообщениями.
-    3. Установка идентификаторов сообщений для папки "inbox".
-    4. Для каждого сообщения:
-       - Создание нового объекта Message и сохранение его в базе данных.
-       - Создание и сохранение объектов FileMessage для каждого прикрепленного файла.
-    """
-    mail = await Mail.objects.filter(login=login).afirst()
-    async with MailServiceManager(login, mail_pass, server) as mail_manager:
-        await mail_manager.set_message_ids("inbox")
-        async for msg in mail_manager.get_messages():
-            message = Message(
-                title=msg.get("title"),
-                date_send=msg.get("date_send"),
-                date_receiving=msg.get("date_received"),
-                text_message=msg.get("content"),
-                mail=mail,
-            )
-            await message.asave()
-
-            message = await Message.objects.filter(pk=message.pk).afirst()
-
-            if message is not None:
-                for file in msg["files"]:
-                    file_instance = FileMessage(
-                        message=message,
-                        file=ContentFile(file["payload"], name=file["file_name"]),
-                    )
-                    await file_instance.asave()
-        count_messages = await Message.objects.filter(mail=mail).acount()
-        return count_messages
 
 
 class WSConsumer(AsyncWebsocketConsumer):
@@ -82,7 +38,6 @@ class WSConsumer(AsyncWebsocketConsumer):
             self.ws_data["load_messages"] = count_messages
 
             await self.send(text_data=json.dumps(self.ws_data))
-            print(count_messages)
             async for item in get_all_messages():
                 files = []
                 serializer = MessageSerializer(item)

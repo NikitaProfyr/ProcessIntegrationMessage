@@ -1,3 +1,5 @@
+"""Вспомогательные функции для работы с данными эл.почты"""
+
 from datetime import datetime
 from email.header import decode_header
 from email.utils import parsedate_tz, mktime_tz
